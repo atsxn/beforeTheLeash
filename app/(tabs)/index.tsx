@@ -1,98 +1,140 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+// app/(tabs)/index.tsx
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import { ThemedText } from "@/components/themed-text";
+import { Itim_400Regular, useFonts } from "@expo-google-fonts/itim";
+import { useRouter } from "expo-router";
+import {
+  Image,
+  Platform,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const router = useRouter();
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  const [fontsLoaded] = useFonts({
+    Itim_400Regular,
+  });
+
+  if (!fontsLoaded) return null;
+
+  const handleStartAssessment = () => {
+    router.push("/screens/AssessmentScreen" as any);
+  };
+
+  return (
+    <TouchableOpacity
+      style={styles.container}
+      onPress={handleStartAssessment}
+      activeOpacity={1}
+    >
+      {/* Header */}
+      <View style={styles.headerSection}>
+        <View style={styles.header}>
+          <ThemedText style={styles.beforeText}>Before</ThemedText>
+
+          <View style={styles.leashWrapper}>
+            <ThemedText style={styles.leashText}>the Leash</ThemedText>
+            <View style={styles.leashUnderline} />
+          </View>
+        </View>
+      </View>
+
+      {/* Dog */}
+      <View style={styles.centerSection}>
+        <Image
+          source={require("@/assets/images/golden1.png")}
+          style={styles.dogImage}
+          resizeMode="contain"
+        />
+      </View>
+
+      {/* Footer */}
+      <View style={styles.footerSection}>
+        <ThemedText style={styles.touchText}>Touch to start!</ThemedText>
+      </View>
+    </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: {
+    flex: 1,
+    backgroundColor: "#F5EDC8",
+    alignItems: "center",
+    paddingHorizontal: 24,
+    paddingTop: Platform.OS === "ios" ? 36 : 20,
   },
-  stepContainer: {
-    gap: 8,
+
+  headerSection: {
+    width: "100%",
+    alignItems: "center",
+    paddingTop: 52,
+    paddingBottom: 90,
+  },
+
+  header: {
+    alignItems: "center",
+  },
+
+  beforeText: {
+    fontSize: 50,
+    lineHeight: 58,
+    fontWeight: "600",
+    color: "#1F2A44",
     marginBottom: 8,
+    fontFamily: "Itim_400Regular",
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+
+  leashWrapper: {
+    alignItems: "center",
+  },
+
+  leashText: {
+    fontSize: 58,
+    lineHeight: 66,
+    fontWeight: "700",
+    color: "#F29A17",
+    fontFamily: "Itim_400Regular",
+  },
+
+  leashUnderline: {
+    width: 250,
+    height: 6,
+    backgroundColor: "#F29A17",
+    borderRadius: 999,
+    marginTop: -2,
+    transform: [{ rotate: "-2deg" }],
+  },
+
+  centerSection: {
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingTop: 40,
+  },
+
+  dogImage: {
+    width: 210,
+    height: 210,
+  },
+
+  footerSection: {
+    flex: 1,
+    width: "100%",
+    justifyContent: "flex-start",
+    alignItems: "center",
+    paddingTop: 95,
+    paddingBottom: Platform.OS === "ios" ? 70 : 40,
+  },
+
+  touchText: {
+    fontSize: 28,
+    lineHeight: 34,
+    fontWeight: "600",
+    color: "#1F2A44",
+    fontFamily: "Itim_400Regular",
   },
 });
