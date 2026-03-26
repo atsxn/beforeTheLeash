@@ -78,6 +78,7 @@ export interface AgeQuestion {
   choices: AgeQuestionChoice[]; // ตัวเลือก
   correctChoiceId: string; // ID ของคำตอบที่ถูก
   points: number; // คะแนนที่ได้ถ้าตอบถูก
+  explanation: string; // คำอธิบายเฉลย
 }
 
 export interface AgeQuestionChoice {

@@ -24,22 +24,15 @@ export const submitAnswer = async (
   gameId: string,
   questionId: string,
   choiceId: string,
-): Promise<{ isCorrect: boolean; points: number }> => {
-  // TODO: เรียก API จริง
-  // const response = await fetch(`${API_URL}/games/${gameId}/answers`, {
-  //   method: 'POST',
-  //   body: JSON.stringify({ question_id: questionId, choice_id: choiceId })
-  // });
-  // return response.json();
-
-  // Mock: ตรวจคำตอบ
+): Promise<{ isCorrect: boolean; points: number; explanation: string }> => {
   const question = mockQuestions.find((q) => q.id === questionId);
-  if (!question) return { isCorrect: false, points: 0 };
+  if (!question) return { isCorrect: false, points: 0, explanation: "" };
 
   const isCorrect = question.correctChoiceId === choiceId;
   return {
     isCorrect,
     points: isCorrect ? question.points : 0,
+    explanation: question.explanation,
   };
 };
 
@@ -60,6 +53,8 @@ const mockQuestions: AgeQuestion[] = [
     ],
     correctChoiceId: "c2",
     points: 10,
+    explanation:
+      "ลูกสุนัขต้องการพลังงานสูงเพื่อการเจริญเติบโต ควรแบ่งอาหารเป็น 3 มื้อต่อวัน เพื่อให้ระบบย่อยอาหารทำงานได้อย่างเหมาะสม",
   },
   {
     id: "q2_puppy",
@@ -72,6 +67,8 @@ const mockQuestions: AgeQuestion[] = [
     ],
     correctChoiceId: "c2",
     points: 10,
+    explanation:
+      "ลูกสุนัขมีพลังงานสูงและต้องการการเคลื่อนไหวหลายครั้งต่อวัน แต่ไม่ควรออกกำลังกายหนักเกินไปในครั้งเดียว การเล่น 2-3 ครั้งสั้น ๆ ดีที่สุด",
   },
 
   // หมาวัยรุ่น
@@ -86,6 +83,8 @@ const mockQuestions: AgeQuestion[] = [
     ],
     correctChoiceId: "c1",
     points: 10,
+    explanation:
+      "สุนัขวัยรุ่นเริ่มมีระบบย่อยอาหารที่สมบูรณ์ขึ้น สามารถลดมื้ออาหารเหลือ 2 มื้อต่อวัน เช้าและเย็น เพื่อควบคุมน้ำหนักที่เหมาะสม",
   },
 
   // หมาโต
@@ -100,6 +99,8 @@ const mockQuestions: AgeQuestion[] = [
     ],
     correctChoiceId: "c1",
     points: 10,
+    explanation:
+      "สุนัขโตเต็มวัยควรกิน 2 มื้อต่อวัน คือเช้าและเย็น การให้อาหารสม่ำเสมอช่วยรักษาระดับพลังงานและสุขภาพระบบย่อยอาหาร",
   },
 
   // สูงอายุ
@@ -114,5 +115,7 @@ const mockQuestions: AgeQuestion[] = [
     ],
     correctChoiceId: "c2",
     points: 10,
+    explanation:
+      "สุนัขสูงอายุมีระบบย่อยอาหารที่อ่อนแอลง ควรแบ่งอาหารเป็น 3 มื้อเล็ก ๆ ต่อวัน เพื่อลดภาระต่อระบบย่อยและรักษาระดับน้ำตาลในเลือดให้คงที่",
   },
 ];

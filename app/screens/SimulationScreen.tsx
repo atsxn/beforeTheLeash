@@ -13,17 +13,24 @@ import {
 import type { AgeQuestion } from "@/app/types";
 import { ThemedText } from "@/components/themed-text";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Itim_400Regular, useFonts } from "@expo-google-fonts/itim";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   Alert,
+  Dimensions,
   Image,
+  ImageBackground,
   Platform,
   SafeAreaView,
   StyleSheet,
   TouchableOpacity,
   View,
 } from "react-native";
+
+const { width: W, height: H } = Dimensions.get("window");
+const sw = W / 390; // scale แนวนอน
+const sh = H / 844; // scale แนวตั้ง
 
 // ===================================
 // ฟังก์ชันโหลดรูปตาม breedPrefix + age
@@ -68,6 +75,8 @@ export default function SimulationScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
 
+  useFonts({ Itim_400Regular });
+
   const gameId = (params.gameId as string) || "";
   const breedName = (params.breedName as string) || "Golden Retriever";
   const breedPrefix = (params.breedPrefix as string) || "golden";
@@ -95,6 +104,20 @@ export default function SimulationScreen() {
   const [showQuestion, setShowQuestion] = useState(false);
   const [answeredQuestions, setAnsweredQuestions] = useState<string[]>([]);
   const [playsThisAge, setPlaysThisAge] = useState(0);
+
+  // ระบบเงิน (mock จาก database)
+  const [money, setMoney] = useState(5000);
+  const HOSPITAL_COST = 1000;
+
+  // ระบบโรงพยาบาล
+  const [showHospital, setShowHospital] = useState(false);
+
+  // ระบบเฉลย
+  const [showExplanation, setShowExplanation] = useState(false);
+  const [lastResult, setLastResult] = useState<{
+    isCorrect: boolean;
+    explanation: string;
+  } | null>(null);
 
   // ===================================
   // 💩 ระบบ Poop
@@ -276,10 +299,10 @@ export default function SimulationScreen() {
 
       if (result.isCorrect) {
         setTotalScore((prev) => prev + result.points);
-        Alert.alert("✅ ถูกต้อง!", `+${result.points} คะแนน`);
-      } else {
-        Alert.alert("❌ ผิด", "ลองใหม่ในครั้งหน้านะ");
       }
+
+      setLastResult({ isCorrect: result.isCorrect, explanation: result.explanation });
+      setShowExplanation(true);
     } catch (error) {
       Alert.alert("Error", "ไม่สามารถบันทึกคำตอบได้");
     }
@@ -317,15 +340,8 @@ export default function SimulationScreen() {
       }
 
       if (health <= 0) {
-        Alert.alert("หมาของคุณตายแล้ว", "คุณดูแลไม่ดีพอ หัวใจหมดแล้ว", [
-          {
-            text: "กลับหน้าหลัก",
-            onPress: () => {
-              clearInterval(interval);
-              router.push("/" as any);
-            },
-          },
-        ]);
+        clearInterval(interval);
+        router.push("/screens/GameOverScreen" as any);
       }
 
       if (isGameCompleted(startDate)) {
@@ -424,10 +440,32 @@ export default function SimulationScreen() {
   };
 
   const handleHospital = () => {
-    Alert.alert("โรงพยาบาล", "โรงพยาบาล (Coming Soon)");
+    setShowHospital(true);
+  };
+
+  const handleHospitalConfirm = () => {
+    setMoney((prev) => prev - HOSPITAL_COST);
+    setHealth((prev) => Math.min(100, prev + 20));
+    setShowHospital(false);
   };
 
   const dogImage = getDogImage(breedPrefix, ageData.imageName);
+
+  const DOG_FIXED_BOTTOM = Math.round(460 * sh);
+  const DOG_CENTER_X = Math.round(214 * sw);
+  const dogSizeMap: Record<string, number> = {
+    "1": Math.round(120 * sw),
+    "2": Math.round(188 * sw),
+    "3": Math.round(224 * sw),
+    "4": Math.round(224 * sw),
+  };
+  const dogSize = dogSizeMap[ageData.imageName] ?? Math.round(224 * sw);
+  const dogDynamicStyle = {
+    width: dogSize,
+    height: dogSize,
+    top: DOG_FIXED_BOTTOM - dogSize,
+    left: DOG_CENTER_X - dogSize / 2,
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -495,7 +533,11 @@ export default function SimulationScreen() {
         </View>
 
         {/* Dog Image */}
-        <Image source={dogImage} style={styles.dogImage} resizeMode="contain" />
+        <Image
+          source={dogImage}
+          style={[styles.dogImage, dogDynamicStyle]}
+          resizeMode="contain"
+        />
 
         {/* 💩 Poop */}
         {showPoop && (
@@ -587,6 +629,51 @@ export default function SimulationScreen() {
           </View>
         )}
 
+        {/* Explanation Overlay */}
+        {showExplanation && lastResult && (
+          <View style={styles.questionOverlay}>
+            <View style={styles.questionBackdrop} pointerEvents="none" />
+
+            <View
+              style={[
+                styles.explanationTitleBox,
+                lastResult.isCorrect
+                  ? styles.explanationCorrect
+                  : styles.explanationWrong,
+              ]}
+            >
+              <ThemedText style={styles.explanationTitleText}>
+                {lastResult.isCorrect
+                  ? "ถูกต้อง!"
+                  : "ยังไม่ใช่นะ ลองดูวิธีที่ถูกต้องกันเถอะ!"}
+              </ThemedText>
+            </View>
+
+            <View
+              style={[
+                styles.explanationBox,
+                lastResult.isCorrect
+                  ? styles.explanationCorrect
+                  : styles.explanationWrong,
+              ]}
+            >
+              <ThemedText style={styles.explanationText}>
+                {lastResult.explanation}
+              </ThemedText>
+            </View>
+
+            <TouchableOpacity
+              style={styles.explanationButton}
+              activeOpacity={0.85}
+              onPress={() => setShowExplanation(false)}
+            >
+              <ThemedText style={styles.explanationButtonText}>
+                กดเพื่อเลี้ยงน้องหมาต่อ
+              </ThemedText>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Bottom Menu */}
         <TouchableOpacity
           style={styles.shopButton}
@@ -605,6 +692,61 @@ export default function SimulationScreen() {
           <ThemedText style={styles.bottomEmoji}>🏥</ThemedText>
           <ThemedText style={styles.bottomText}>โรงพยาบาล</ThemedText>
         </TouchableOpacity>
+
+        {/* Hospital Modal */}
+        {showHospital && (
+          <View style={styles.hospitalOverlay}>
+            <View style={styles.questionBackdrop} pointerEvents="none" />
+
+            <ImageBackground
+              source={require("@/assets/images/bill.png")}
+              style={styles.billBg}
+              resizeMode="stretch"
+            >
+              <View style={styles.billContent}>
+                <ThemedText style={styles.billTitle}>ใบเสร็จค่ารักษา</ThemedText>
+
+                <View style={styles.billRow}>
+                  <ThemedText style={styles.billLabel}>ยอดเงินปัจจุบัน</ThemedText>
+                  <ThemedText style={styles.billValue}>{money.toLocaleString()} บาท</ThemedText>
+                </View>
+
+                <View style={styles.billRow}>
+                  <ThemedText style={[styles.billLabel, { color: "#DD2E44" }]}>หักค่ารักษา</ThemedText>
+                  <ThemedText style={[styles.billValue, { color: "#DD2E44" }]}>
+                    -{HOSPITAL_COST.toLocaleString()} บาท
+                  </ThemedText>
+                </View>
+
+                <View style={styles.billDivider} />
+
+                <View style={styles.billRow}>
+                  <ThemedText style={styles.billLabelBold}>ยอดเงินคงเหลือ</ThemedText>
+                  <ThemedText style={styles.billValueBold}>
+                    {(money - HOSPITAL_COST).toLocaleString()} บาท
+                  </ThemedText>
+                </View>
+              </View>
+            </ImageBackground>
+
+            <View style={styles.hospitalButtons}>
+              <TouchableOpacity
+                style={styles.hospitalBtnNo}
+                activeOpacity={0.85}
+                onPress={() => setShowHospital(false)}
+              >
+                <ThemedText style={styles.hospitalBtnText}>ไม่รักษา</ThemedText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.hospitalBtnYes}
+                activeOpacity={0.85}
+                onPress={handleHospitalConfirm}
+              >
+                <ThemedText style={styles.hospitalBtnText}>ตกลง</ThemedText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -751,47 +893,47 @@ const styles = StyleSheet.create({
 
   poopButton: {
     position: "absolute",
-    left: 290,
-    top: 448,
+    left: Math.round(290 * sw),
+    top: Math.round(448 * sh),
     zIndex: 1,
   },
 
   poopImage: {
-    width: 42,
-    height: 42,
+    width: Math.round(42 * sw),
+    height: Math.round(42 * sw),
   },
 
   waterButton: {
     position: "absolute",
-    left: 62,
-    top: 465,
+    left: Math.round(62 * sw),
+    top: Math.round(465 * sh),
   },
 
   waterImage: {
-    width: 78,
-    height: 78,
+    width: Math.round(78 * sw),
+    height: Math.round(78 * sw),
   },
 
   foodButton: {
     position: "absolute",
-    left: 122,
-    top: 492,
+    left: Math.round(122 * sw),
+    top: Math.round(492 * sh),
   },
 
   foodImage: {
-    width: 86,
-    height: 86,
+    width: Math.round(86 * sw),
+    height: Math.round(86 * sw),
   },
 
   ballButton: {
     position: "absolute",
-    left: 255,
-    top: 509,
+    left: Math.round(255 * sw),
+    top: Math.round(509 * sh),
   },
 
   ballImage: {
-    width: 38,
-    height: 38,
+    width: Math.round(38 * sw),
+    height: Math.round(38 * sw),
   },
 
   questionOverlay: {
@@ -890,5 +1032,179 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#111",
     fontFamily: "Itim",
+  },
+
+  // ===== Explanation Overlay =====
+  explanationTitleBox: {
+    width: "84%",
+    borderRadius: 34,
+    paddingHorizontal: 26,
+    paddingVertical: 22,
+    borderWidth: 3,
+    marginTop: 180,
+    marginBottom: 16,
+    zIndex: 21,
+    alignItems: "center",
+  },
+
+  explanationTitleText: {
+    fontSize: 18,
+    fontWeight: "700",
+    fontFamily: "Itim",
+    color: "#1F2A44",
+    textAlign: "center",
+  },
+
+  explanationBox: {
+    width: "84%",
+    borderRadius: 34,
+    paddingHorizontal: 26,
+    paddingVertical: 24,
+    borderWidth: 3,
+    marginBottom: 20,
+    zIndex: 21,
+    alignItems: "center",
+  },
+
+  explanationText: {
+    fontSize: 16,
+    lineHeight: 34,
+    textAlign: "center",
+    color: "#1F2A44",
+    fontFamily: "Itim",
+  },
+
+  explanationCorrect: {
+    backgroundColor: "#B9E6B0",
+    borderColor: "#7CB342",
+  },
+
+  explanationWrong: {
+    backgroundColor: "#EC9191",
+    borderColor: "#DD2E44",
+  },
+
+  explanationButton: {
+    width: "84%",
+    backgroundColor: "#FFF9C4",
+    borderRadius: 34,
+    borderWidth: 3,
+    borderColor: "#F29A17",
+    paddingVertical: 20,
+    alignItems: "center",
+    zIndex: 21,
+  },
+
+  explanationButtonText: {
+    fontSize: 17,
+    fontWeight: "700",
+    fontFamily: "Itim",
+    color: "#1F2A44",
+  },
+
+  // ===== Hospital Modal =====
+  hospitalOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 20,
+  },
+
+  billBg: {
+    width: W * 0.82,
+    height: Math.round(W * 0.82 * 1.55),
+    zIndex: 21,
+    justifyContent: "flex-start",
+    overflow: "hidden",
+  },
+
+  billContent: {
+    paddingHorizontal: 45,
+    paddingTop: Math.round(W * 0.82 * 1.55 * 0.18),
+  },
+
+  billTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    fontFamily: "Itim",
+    color: "#1F2A44",
+    textAlign: "center",
+    marginBottom: 12,
+  },
+
+  billRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 5,
+  },
+
+  billLabel: {
+    fontSize: 15,
+    fontFamily: "Itim",
+    color: "#333",
+  },
+
+  billLabelBold: {
+    fontSize: 16,
+    fontFamily: "Itim",
+    fontWeight: "700",
+    color: "#1F2A44",
+  },
+
+  billValue: {
+    fontSize: 15,
+    fontFamily: "Itim",
+    color: "#333",
+  },
+
+  billValueBold: {
+    fontSize: 16,
+    fontFamily: "Itim",
+    fontWeight: "700",
+    color: "#1F2A44",
+  },
+
+  billDivider: {
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: "#AAA",
+    marginVertical: 8,
+  },
+
+  hospitalButtons: {
+    flexDirection: "row",
+    gap: 14,
+    marginTop: 20,
+    paddingHorizontal: 24,
+    width: W * 0.82,
+    zIndex: 21,
+  },
+
+  hospitalBtnNo: {
+    flex: 1,
+    backgroundColor: "#DD2E44",
+    borderRadius: 20,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+
+  hospitalBtnYes: {
+    flex: 1,
+    backgroundColor: "#8DD67F",
+    borderRadius: 20,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+
+  hospitalBtnText: {
+    fontSize: 17,
+    fontWeight: "700",
+    fontFamily: "Itim",
+    color: "#FFFFFF",
   },
 });
