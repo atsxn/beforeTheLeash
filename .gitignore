@@ -41,3 +41,9 @@ app-example
 # generated native folders
 /ios
 /android
+
+logs/
+env_scraper/
+__pycache__/
+*.log
+.env
